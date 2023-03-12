@@ -380,7 +380,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "sc_floam_laserLO");
     ros::NodeHandle nh;
 
-    laserLoopOptimization.save_directory = "/home/llz/message/";
+    laserLoopOptimization.save_directory = "/root/message";
     laserLoopOptimization.pgKITTIformat = laserLoopOptimization.save_directory + "optimized_poses.txt";
     laserLoopOptimization.odomKITTIformat = laserLoopOptimization.save_directory + "odom_poses.txt";
     laserLoopOptimization.gt_odomKITTIformat = laserLoopOptimization.save_directory + "gt_poses.txt";
