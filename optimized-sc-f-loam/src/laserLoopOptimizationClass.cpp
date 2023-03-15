@@ -4,6 +4,8 @@
 
 #include <laserLoopOptimizationClass.h>
 
+#define TF_MAP "map"
+
 using std::cout;
 using std::endl;
 
@@ -144,6 +146,7 @@ void laserLoopOptimizationClass::save_and_update_PGnode(const pcl::PointCloud<Po
     //将当前关键帧的索引设置为当前关键字容器的最后一个索引，这个索引值会被添加到图优化节点构建中，同时这个索引也用于sc信息的读取
     const int prev_node_idx = keyframePoses.size() - 2;
     const int curr_node_idx = keyframePoses.size() - 1; // becuase cpp starts with 0 (actually this index could be any number, but for simple implementation, we follow sequential indexing)
+
     if( ! gtSAMgraphMade /* prior node */) {
 
         const int init_node_idx = 0;
@@ -551,12 +554,12 @@ std::optional<gtsam::Pose3> laserLoopOptimizationClass::doVirtualRelative( const
 //    // loop verification
 //    sensor_msgs::PointCloud2 cureKeyframeCloudMsg;
 //    pcl::toROSMsg(*cureKeyframeCloud_surf + *cureKeyframeCloud_edge, cureKeyframeCloudMsg);
-//    cureKeyframeCloudMsg.header.frame_id = "map";
+//    cureKeyframeCloudMsg.header.frame_id = TF_MAP;
 //    pubLoopScanLocal.publish(cureKeyframeCloudMsg);
 //
 //    sensor_msgs::PointCloud2 targetKeyframeCloudMsg;
 //    pcl::toROSMsg(*laserCloudSurfMap + *laserCloudCornerMap, targetKeyframeCloudMsg);
-//    targetKeyframeCloudMsg.header.frame_id = "map";
+//    targetKeyframeCloudMsg.header.frame_id = TF_MAP;
 //    pubLoopSubmapLocal.publish(targetKeyframeCloudMsg);
     ///todo:计算检测到的两帧数据之间的初始位姿
 
@@ -623,12 +626,12 @@ bool laserLoopOptimizationClass::doloopclosure(ros::Publisher &pubLoopScanLocal,
         // loop verification
         sensor_msgs::PointCloud2 cureKeyframeCloudMsg;
         pcl::toROSMsg(*cureKeyframeCloud_surf + *cureKeyframeCloud_edge, cureKeyframeCloudMsg);
-        cureKeyframeCloudMsg.header.frame_id = "map";
+        cureKeyframeCloudMsg.header.frame_id = TF_MAP;
         pubLoopScanLocal.publish(cureKeyframeCloudMsg);
 
         sensor_msgs::PointCloud2 targetKeyframeCloudMsg;
         pcl::toROSMsg(*laserCloudSurfMap + *laserCloudCornerMap, targetKeyframeCloudMsg);
-        targetKeyframeCloudMsg.header.frame_id = "map";
+        targetKeyframeCloudMsg.header.frame_id = TF_MAP;
         pubLoopSubmapLocal.publish(targetKeyframeCloudMsg);
         return correct;
     }
@@ -649,12 +652,12 @@ bool laserLoopOptimizationClass::doloopclosure(ros::Publisher &pubLoopScanLocal,
 //            // loop verification
 //            sensor_msgs::PointCloud2 cureKeyframeCloudMsg;
 //            pcl::toROSMsg(*cureKeyframeCloud_surf + *cureKeyframeCloud_edge, cureKeyframeCloudMsg);
-//            cureKeyframeCloudMsg.header.frame_id = "map";
+//            cureKeyframeCloudMsg.header.frame_id = TF_MAP;
 //            pubLoopScanLocal.publish(cureKeyframeCloudMsg);
 //
 //            sensor_msgs::PointCloud2 targetKeyframeCloudMsg;
 //            pcl::toROSMsg(*laserCloudSurfMap + *laserCloudCornerMap, targetKeyframeCloudMsg);
-//            targetKeyframeCloudMsg.header.frame_id = "map";
+//            targetKeyframeCloudMsg.header.frame_id = TF_MAP;
 //            pubLoopSubmapLocal.publish(targetKeyframeCloudMsg);
 //
 //            interval = curr_node_idx;
@@ -683,8 +686,8 @@ void laserLoopOptimizationClass::updatePoses()
     const gtsam::Pose3& lastOptimizedPose = isamCurrentEstimate.at<gtsam::Pose3>(int(isamCurrentEstimate.size())-1);
 //    recentOptimizedX = lastOptimizedPose.translation().x();
 //    recentOptimizedY = lastOptimizedPose.translation().y();
-
     recentIdxUpdated = int(keyframePosesUpdated.size()) - 1;
+
 
     mtxRecentPose.unlock();
 } // updatePoses
@@ -778,6 +781,7 @@ void laserLoopOptimizationClass::doIsam2() {
 }
 
 void laserLoopOptimizationClass::pubMap(const pcl::PointCloud<PointType>::Ptr& laserCloudMapPGO) {
+
     if(recentIdxUpdated > 1) {
         int SKIP_FRAMES = 2; // sparse map visulalization to save computations
         int counter = 0;
@@ -799,7 +803,7 @@ void laserLoopOptimizationClass::pubMap(const pcl::PointCloud<PointType>::Ptr& l
 //
 //        sensor_msgs::PointCloud2 laserCloudMapPGOMsg;
 //        pcl::toROSMsg(*laserCloudMapPGO, laserCloudMapPGOMsg);
-//        laserCloudMapPGOMsg.header.frame_id = "map";
+//        laserCloudMapPGOMsg.header.frame_id = TF_MAP;
 //        pubMapAftPGO.publish(laserCloudMapPGOMsg);
     }
 }
@@ -810,7 +814,7 @@ void laserLoopOptimizationClass::pubPath(ros::Publisher& pubOdomAftPGO, ros::Pub
         // pub odom and path
         nav_msgs::Odometry odomAftPGO;
         nav_msgs::Path pathAftPGO;
-        pathAftPGO.header.frame_id = "map";
+        pathAftPGO.header.frame_id = TF_MAP;
         mKF.lock();
         // for (int node_idx=0; node_idx < int(keyframePosesUpdated.size()) - 1; node_idx++) // -1 is just delayed visualization (because sometimes mutexed while adding(push_back) a new one)
         for (int node_idx=0; node_idx < recentIdxUpdated; node_idx++) // -1 is just delayed visualization (because sometimes mutexed while adding(push_back) a new one)
@@ -819,7 +823,7 @@ void laserLoopOptimizationClass::pubPath(ros::Publisher& pubOdomAftPGO, ros::Pub
             // const gtsam::Pose3& pose_est = isamCurrentEstimate.at<gtsam::Pose3>(node_idx);
 
             nav_msgs::Odometry odomAftPGOthis;
-            odomAftPGOthis.header.frame_id = "map";
+            odomAftPGOthis.header.frame_id = TF_MAP;
             odomAftPGOthis.child_frame_id = "aft_pgo_odom";
             odomAftPGOthis.header.stamp = ros::Time().fromSec(keyframeTimes.at(node_idx));
             odomAftPGOthis.pose.pose.position.x = pose_est.x;
@@ -833,7 +837,7 @@ void laserLoopOptimizationClass::pubPath(ros::Publisher& pubOdomAftPGO, ros::Pub
             poseStampAftPGO.pose = odomAftPGOthis.pose.pose;
 
             pathAftPGO.header.stamp = odomAftPGOthis.header.stamp;
-            pathAftPGO.header.frame_id = "map";
+            pathAftPGO.header.frame_id = TF_MAP;
             pathAftPGO.poses.push_back(poseStampAftPGO);
         }
         mKF.unlock();
@@ -849,7 +853,7 @@ void laserLoopOptimizationClass::pubPath(ros::Publisher& pubOdomAftPGO, ros::Pub
         q.setY(odomAftPGO.pose.pose.orientation.y);
         q.setZ(odomAftPGO.pose.pose.orientation.z);
         transform.setRotation(q);
-        // br.sendTransform(tf::StampedTransform(transform, odomAftPGO.header.stamp, "map", "aft_pgo_odom"));
+        // br.sendTransform(tf::StampedTransform(transform, odomAftPGO.header.stamp, TF_MAP, "aft_pgo_odom"));
     }
 }
 

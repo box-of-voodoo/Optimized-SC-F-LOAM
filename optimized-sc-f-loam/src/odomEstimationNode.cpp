@@ -26,6 +26,8 @@
 #include "lidar.h"
 #include "odomEstimationClass.h"
 
+#define TF_MAP "map"
+
 OdomEstimationClass odomEstimation;
 std::mutex mutex_lock;
 std::queue<sensor_msgs::PointCloud2ConstPtr> pointCloudEdgeBuf;
@@ -114,12 +116,12 @@ void odom_estimation(){
             //setRotation填入参数（tf::Quaternion）
             transform.setRotation(q);
             //发布坐标
-            br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "map", "base_link"));
+            br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), TF_MAP, "base_link"));
 
             // 发布里程计信息
             // publish odometry
             nav_msgs::Odometry laserOdometry;
-            laserOdometry.header.frame_id = "map";
+            laserOdometry.header.frame_id = TF_MAP;
             laserOdometry.child_frame_id = "base_link";
             laserOdometry.header.stamp = pointcloud_time;
             laserOdometry.pose.pose.orientation.x = q_current.x();

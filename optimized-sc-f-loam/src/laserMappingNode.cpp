@@ -26,6 +26,7 @@
 #include "laserMappingClass.h"
 #include "lidar.h"
 
+#define TF_MAP "map"
 
 LaserMappingClass laserMapping;
 lidar::Lidar lidar_param;
@@ -93,7 +94,7 @@ void laser_mapping(){
             sensor_msgs::PointCloud2 PointsMsg;
             pcl::toROSMsg(*pc_map, PointsMsg);
             PointsMsg.header.stamp = pointcloud_time;
-            PointsMsg.header.frame_id = "map";
+            PointsMsg.header.frame_id = TF_MAP;
             map_pub.publish(PointsMsg); 
             
 

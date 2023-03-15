@@ -31,6 +31,8 @@
 #include "scancontext/Scancontext.h"
 #include "laserLoopOptimizationClass.h"
 
+#define TF_MAP "map"
+
 using namespace gtsam;
 
 lidar::Lidar lidar_param;
@@ -363,13 +365,14 @@ void process_viz_map()
         laserLoopOptimization.pubMap(laserCloudMapPGO);
 
         downSizeFilterMapPGO.setInputCloud(laserCloudMapPGO);
+
         downSizeFilterMapPGO.filter(*laserCloudMapPGO);
 
-	pcl::io::savePCDFileBinary(laserLoopOptimization.pgScansDirectory + "map.pcd", *laserCloudMapPGO);
+	    pcl::io::savePCDFileBinary(laserLoopOptimization.pgScansDirectory + "map.pcd", *laserCloudMapPGO);
 
         sensor_msgs::PointCloud2 laserCloudMapPGOMsg;
         pcl::toROSMsg(*laserCloudMapPGO, laserCloudMapPGOMsg);
-        laserCloudMapPGOMsg.header.frame_id = "map";
+        laserCloudMapPGOMsg.header.frame_id = TF_MAP;
         pubMapAftPGO.publish(laserCloudMapPGOMsg);
     }
 } // pointcloud_viz
@@ -380,7 +383,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "sc_floam_laserLO");
     ros::NodeHandle nh;
 
-    laserLoopOptimization.save_directory = "/root/message";
+    laserLoopOptimization.save_directory = "/root/message/";
     laserLoopOptimization.pgKITTIformat = laserLoopOptimization.save_directory + "optimized_poses.txt";
     laserLoopOptimization.odomKITTIformat = laserLoopOptimization.save_directory + "odom_poses.txt";
     laserLoopOptimization.gt_odomKITTIformat = laserLoopOptimization.save_directory + "gt_poses.txt";
