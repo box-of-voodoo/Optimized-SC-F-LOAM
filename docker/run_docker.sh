@@ -17,7 +17,7 @@ docker run -it \
     --env="QT_X11_NO_MITSHM=1" \
     --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
     -v "$HOME/.Xauthority:/root/.Xauthorit" \
-    -v "$PWD/../Optimized-SC-F-LOAM:/root/catkin_ws/src/Optimized-SC-F-LOAM" \
+    -v "$PWD/../../Optimized-SC-F-LOAM:/root/catkin_ws/src/Optimized-SC-F-LOAM" \
     -v "/media/jakub/Data/datasets/diplomka/:/data" \
     -v "$PWD/.bashrc:/root/.bashrc" \
     $1 sh -c "cd ~/catkin_ws;catkin_make;bash"
