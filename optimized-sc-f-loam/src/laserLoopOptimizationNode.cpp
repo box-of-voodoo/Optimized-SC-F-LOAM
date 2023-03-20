@@ -137,12 +137,28 @@ void process_pg()
     while(1)
     {
         //里程计信息和点云数据信息以及gt信息
-        while ( !odometryBuf.empty() && !fullResBuf.empty() && !ground_truth.empty() && !pointCloudEdgeBuf.empty() && !pointCloudSurfBuf.empty())
+        while ( !odometryBuf.empty() && !fullResBuf.empty() && !pointCloudEdgeBuf.empty() && !pointCloudSurfBuf.empty())
         {
             //
             // pop and check keyframe is or not  删除并检查关键帧是否存在
             //
             mutex_lock.lock();
+            if( !ground_truth.empty())
+            {
+                //将gt信息与odometry做时间同步
+                while (!ground_truth.empty() && ground_truth.front().header.stamp.toSec() < odometryBuf.front()->header.stamp.toSec())
+                    ground_truth.pop();
+                if (ground_truth.empty())
+                {
+                    mutex_lock.unlock();
+                    break;
+                }
+            timeGroud_truth = ground_truth.front().header.stamp.toSec();
+            Pose6D pose_gt_curr = laserLoopOptimization.getOdom(ground_truth.front());
+            ground_truth.pop();
+            laserLoopOptimization.keyframegtPoses.push_back(pose_gt_curr);
+            }
+
             //需要操作odometryBuf内存，要先锁住该线程
             while (!odometryBuf.empty() && odometryBuf.front()->header.stamp.toSec() < fullResBuf.front()->header.stamp.toSec())
                 odometryBuf.pop();
@@ -152,14 +168,6 @@ void process_pg()
                 break;
             }
 
-            //将gt信息与odometry做时间同步
-            while (!ground_truth.empty() && ground_truth.front().header.stamp.toSec() < odometryBuf.front()->header.stamp.toSec())
-                ground_truth.pop();
-            if (ground_truth.empty())
-            {
-                mutex_lock.unlock();
-                break;
-            }
             //edge与odom时间同步
             while (!pointCloudSurfBuf.empty() && pointCloudSurfBuf.front()->header.stamp.toSec() < odometryBuf.front()->header.stamp.toSec())
                 pointCloudSurfBuf.pop();
@@ -196,7 +204,6 @@ void process_pg()
             // Time equal check
             timeLaserOdometry = odometryBuf.front()->header.stamp.toSec();
             timeLaser = fullResBuf.front()->header.stamp.toSec();
-            timeGroud_truth = ground_truth.front().header.stamp.toSec();
 //            查看三个点云数据是否时间同步
 //            std::cout << std::fixed << std::setprecision(7) << pointCloudEdgeBuf.front()->header.stamp.toSec() << " and " << pointCloudSurfBuf.front()->header.stamp.toSec() << " and " << pointCloudSurfBuf.front()->header.stamp.toSec() << std::endl;
 
@@ -227,8 +234,7 @@ void process_pg()
             odometryBuf.pop();
 
             //得到gt坐标
-            Pose6D pose_gt_curr = laserLoopOptimization.getOdom(ground_truth.front());
-            ground_truth.pop();
+
 
             mutex_lock.unlock();
 
@@ -261,7 +267,7 @@ void process_pg()
 
 //            std::cout << "滤波前的点数量" << thisKeyFrame_surf->size() << std::endl;
 //            std::cout << "滤波后的点数量" << downsampledSurfCloud->size() << std::endl;
-            laserLoopOptimization.save_and_update_PGnode(thisKeyFrame, thisKeyFrame_surf, thisKeyFrame_edge, pose_curr, pose_gt_curr, timeLaserOdometry, timeLaser, timeGroud_truth);
+            laserLoopOptimization.save_and_update_PGnode(thisKeyFrame, thisKeyFrame_surf, thisKeyFrame_edge, pose_curr, timeLaserOdometry, timeLaser);
 
 
             // if want to print the current graph, use gtSAMgraph.print("\nFactor Graph:\n");

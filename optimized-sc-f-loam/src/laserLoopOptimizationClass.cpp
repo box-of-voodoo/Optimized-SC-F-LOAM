@@ -4,6 +4,8 @@
 
 #include <laserLoopOptimizationClass.h>
 
+#include <saveResultKITTYformat.h>
+
 #define TF_MAP "map"
 
 using std::cout;
@@ -106,7 +108,13 @@ void laserLoopOptimizationClass::initNoises()
 } // initNoises
 
 
-void laserLoopOptimizationClass::save_and_update_PGnode(const pcl::PointCloud<PointType>::Ptr& thisKeyFrame, pcl::PointCloud<PointType>::Ptr thisKeyFrame_surf, pcl::PointCloud<PointType>::Ptr thisKeyFrame_edge, Pose6D& pose_curr, Pose6D& pose_gt_curr, double& timeLaserOdometry, double& timeLaser, double& timeGroud_truth)
+void laserLoopOptimizationClass::save_and_update_PGnode(
+    const pcl::PointCloud<PointType>::Ptr& thisKeyFrame,
+    pcl::PointCloud<PointType>::Ptr thisKeyFrame_surf,
+    pcl::PointCloud<PointType>::Ptr thisKeyFrame_edge,
+    Pose6D& pose_curr,
+    double& timeLaserOdometry,
+    double& timeLaser)
 {
     //
     // Save data and Add consecutive node
@@ -133,7 +141,6 @@ void laserLoopOptimizationClass::save_and_update_PGnode(const pcl::PointCloud<Po
 //    keyframeLaserClouds_edge.push_back(thisKeyFrame_edge);
 //    keyframeLaserClouds_surf.push_back(thisKeyFrame_surf);
     keyframePoses.push_back(pose_curr);
-    keyframegtPoses.push_back(pose_gt_curr);
     keyframePosesUpdated.push_back(pose_curr); // init
     keyframeTimes.push_back(timeLaserOdometry);
 
@@ -705,68 +712,6 @@ void laserLoopOptimizationClass::runISAM2opt()
     updatePoses();
 }//runISAM2opt
 
-void laserLoopOptimizationClass::saveOptimizedVerticesKITTIformat(const gtsam::Values& _estimates, std::string _filename)
-{
-    using namespace gtsam;
-    std::cout << "优化后位姿的长度: " << _estimates.size() << std::endl;
-
-    std::fstream stream(_filename.c_str(), std::fstream::out);
-    for(const auto& key_value: _estimates) {
-        auto p = dynamic_cast<const GenericValue<Pose3>*>(&key_value.value);
-        if (!p) continue;
-
-        const Pose3& pose = p->value();
-
-        Point3 t = pose.translation();
-        Rot3 R = pose.rotation();
-        auto col1 = R.column(1); // Point3
-        auto col2 = R.column(2); // Point3
-        auto col3 = R.column(3); // Point3
-
-        stream << col1.x() << " " << col2.x() << " " << col3.x() << " " << t.x() << " "
-               << col1.y() << " " << col2.y() << " " << col3.y() << " " << t.y() << " "
-               << col1.z() << " " << col2.z() << " " << col3.z() << " " << t.z() << std::endl;
-    }
-
-}//saveOptimizedVerticesKITTIformat
-
-void laserLoopOptimizationClass::saveOdometryVerticesKITTIformat(const std::string& _filename)
-{
-    // ref from gtsam's original code "dataset.cpp"
-    std::cout << "优化前位姿的长度： " << keyframePoses.size() << std::endl;
-    std::fstream stream(_filename.c_str(), std::fstream::out);
-    for(const auto& _pose6d: keyframePoses) {
-        gtsam::Pose3 pose = Pose6DtoGTSAMPose3(_pose6d);
-        gtsam::Point3 t = pose.translation();
-        gtsam::Rot3 R = pose.rotation();
-        auto col1 = R.column(1); // Point3
-        auto col2 = R.column(2); // Point3
-        auto col3 = R.column(3); // Point3
-        stream << col1.x() << " " << col2.x() << " " << col3.x() << " " << t.x() << " "
-               << col1.y() << " " << col2.y() << " " << col3.y() << " " << t.y() << " "
-               << col1.z() << " " << col2.z() << " " << col3.z() << " " << t.z() << std::endl;
-    }
-}//saveOdometryVerticesKITTIformat
-
-void laserLoopOptimizationClass::savegtVerticesKITTIformat(const std::string& _filename)
-{
-    // ref from gtsam's original code "dataset.cpp"
-    std::cout << "gt位姿的长度： " << keyframegtPoses.size() << std::endl;
-    std::fstream stream(_filename.c_str(), std::fstream::out);
-    for(const auto& _pose6d: keyframegtPoses) {
-        gtsam::Pose3 pose = Pose6DtoGTSAMPose3(_pose6d);
-        gtsam::Point3 t = pose.translation();
-        gtsam::Rot3 R = pose.rotation();
-        auto col1 = R.column(1); // Point3
-        auto col2 = R.column(2); // Point3
-        auto col3 = R.column(3); // Point3
-
-        stream << col1.x() << " " << col2.x() << " " << col3.x() << " " << t.x() << " "
-               << col1.y() << " " << col2.y() << " " << col3.y() << " " << t.y() << " "
-               << col1.z() << " " << col2.z() << " " << col3.z() << " " << t.z() << std::endl;
-    }
-}//savegtVerticesKITTIformat
-
 void laserLoopOptimizationClass::doIsam2() {
     if( gtSAMgraphMade ) {
         mtxPosegraph.lock();
@@ -775,8 +720,11 @@ void laserLoopOptimizationClass::doIsam2() {
         mtxPosegraph.unlock();
 
         saveOptimizedVerticesKITTIformat(isamCurrentEstimate, pgKITTIformat); // pose
-        saveOdometryVerticesKITTIformat(odomKITTIformat); // pose
-        savegtVerticesKITTIformat(gt_odomKITTIformat); // gt_pose
+        saveVerticesKITTIformat(keyframePoses,odomKITTIformat); // pose
+        if (!keyframegtPoses.empty())
+        {
+            saveVerticesKITTIformat(keyframegtPoses,gt_odomKITTIformat); // gt_pose
+        }
     }
 }
 

@@ -74,7 +74,7 @@ public:
     //计算两个位姿之间的距离
     static Pose6D diffTransformation(const Pose6D& _p1, const Pose6D& _p2);
     bool isaNowKeyFrame(const Pose6D& odom_pose_prev, const Pose6D& odom_pose_curr);
-    void save_and_update_PGnode(const pcl::PointCloud<PointType>::Ptr& thisKeyFrame, pcl::PointCloud<PointType>::Ptr thisKeyFrame_surf, pcl::PointCloud<PointType>::Ptr thisKeyFrame_edge, Pose6D& pose_curr, Pose6D& pose_gt_curr, double& timeLaserOdometry, double& timeLaser, double& timeGroud_truth);
+    void save_and_update_PGnode(const pcl::PointCloud<PointType>::Ptr& thisKeyFrame, pcl::PointCloud<PointType>::Ptr thisKeyFrame_surf, pcl::PointCloud<PointType>::Ptr thisKeyFrame_edge, Pose6D& pose_curr, double& timeLaserOdometry, double& timeLaser);
     static gtsam::Pose3 Pose6DtoGTSAMPose3(const Pose6D& p);
     void initNoises();
     std::string padZeros(int val, int num_digits = 6);
@@ -97,9 +97,6 @@ public:
 
 
     //process_isam
-    void saveOptimizedVerticesKITTIformat(const gtsam::Values& _estimates, std::string _filename);
-    void saveOdometryVerticesKITTIformat(const std::string& _filename);
-    void savegtVerticesKITTIformat(const std::string& _filename);
     void updatePoses();
     void runISAM2opt();
     void doIsam2();
