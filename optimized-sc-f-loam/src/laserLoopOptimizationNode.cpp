@@ -31,7 +31,7 @@
 #include "scancontext/Scancontext.h"
 #include "laserLoopOptimizationClass.h"
 
-#define TF_MAP "map"
+#define TF_MAP "scfloam_map"
 
 using namespace gtsam;
 
@@ -139,6 +139,7 @@ void process_pg()
         //里程计信息和点云数据信息以及gt信息
         while ( !odometryBuf.empty() && !fullResBuf.empty() && !pointCloudEdgeBuf.empty() && !pointCloudSurfBuf.empty())
         {
+
             //
             // pop and check keyframe is or not  删除并检查关键帧是否存在
             //
@@ -307,7 +308,7 @@ void process()
         while ( !laserLoopOptimization.scLoopBuf.empty() )
         {
             if( laserLoopOptimization.scLoopBuf.size() > 30 ) {
-                ROS_WARN("太多回环候选等待执行，请降低process_lcd线程的频率");
+                ROS_WARN("Too many loopback candidates are waiting to be executed, please reduce the process lcd thread");
             }
             std::chrono::time_point<std::chrono::system_clock> start, end;
             start = std::chrono::system_clock::now();
@@ -373,7 +374,6 @@ void process_viz_map()
         downSizeFilterMapPGO.setInputCloud(laserCloudMapPGO);
 
         downSizeFilterMapPGO.filter(*laserCloudMapPGO);
-
 	    pcl::io::savePCDFileBinary(laserLoopOptimization.pgScansDirectory + "map.pcd", *laserCloudMapPGO);
 
         sensor_msgs::PointCloud2 laserCloudMapPGOMsg;
@@ -389,7 +389,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "sc_floam_laserLO");
     ros::NodeHandle nh;
 
-    laserLoopOptimization.save_directory = "/root/message/";
+    laserLoopOptimization.save_directory = "/data/results/message/";
     laserLoopOptimization.pgKITTIformat = laserLoopOptimization.save_directory + "optimized_poses.txt";
     laserLoopOptimization.odomKITTIformat = laserLoopOptimization.save_directory + "odom_poses.txt";
     laserLoopOptimization.gt_odomKITTIformat = laserLoopOptimization.save_directory + "gt_poses.txt";
@@ -422,7 +422,7 @@ int main(int argc, char **argv)
     laserLoopOptimization.keyframeRadGap = deg2rad(laserLoopOptimization.keyframeDegGap);
 
     nh.param<double>("sc_dist_thres", laserLoopOptimization.scDistThres, 0.4);
-    nh.param<double>("sc_max_radius", laserLoopOptimization.scMaximumRadius, 80.0); // 80 is recommended for outdoor, and lower (ex, 20, 40) values are recommended for indoor
+    nh.param<double>("sc_max_radius", laserLoopOptimization.scMaximumRadius, 40.0); // 80 is recommended for outdoor, and lower (ex, 20, 40) values are recommended for indoor
 
     ISAM2Params parameters;
     parameters.relinearizeThreshold = 0.01;
@@ -435,7 +435,7 @@ int main(int argc, char **argv)
     scManager.setMaximumRadius(laserLoopOptimization.scMaximumRadius);
 
     //定义降采样的方格大小
-    float filter_size = 0.4;
+    float filter_size = map_resolution;
     laserLoopOptimization.downSizeFilterScancontext.setLeafSize(filter_size, filter_size, filter_size);
     laserLoopOptimization.downSizeFilterICP.setLeafSize(filter_size, filter_size, filter_size);
 

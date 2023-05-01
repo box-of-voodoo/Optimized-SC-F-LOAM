@@ -1,0 +1,98 @@
+<?xml version="1.0"?>
+<launch>
+
+    
+    <node pkg="rosbag" type="play" name="rosbag_play" args="-&#45;clock -r 1 /data/recs/lab_pass_1.bag"/>
+    <remap from="/velodyne_points" to="/loki_1/sensors/velodyne_1/cloud"/>
+    <!-- <remap from="/different_topic" to="/needed_topic"/> -->
+
+    <!-- For Velodyne VLP-16 -->
+    <!-- <param name="scan_line" value="16" /> -->
+    
+
+    <!-- For Velodyne HDL-32  -->
+    <param name="scan_line" value="32" />
+
+    <!-- For Velodyne HDL-64 -->
+    <!-- <param name="scan_line" value="64" /> -->
+    
+    <!--- Sim Time -->
+    <param name="/use_sim_time" value="true" />
+    <param name="scan_period" value="0.1" />
+    <!-- vertical angle not used  -->
+    <param name="vertical_angle" type="double" value="1.0" />
+    <param name="max_dis" type="double" value="200.0" />
+    <param name="min_dis" type="double" value="2.0" />
+    <!-- map_resolution set resolution of map for floam and resolution for loop closure and graph optimization -->
+    <param name="map_resolution" type="double" value="0.15" />
+    <!-- mapviz_filter_size set resolution of final map which is published and saved (topic - /aft_pgo_map) -->
+    <param name="mapviz_filter_size" type="double" value="0.2" />
+    
+    <!--- -->
+    <!-- <group ns="scfloam"> -->
+        <node pkg="optimized_sc_f_loam" type="sc_floam_odom_estimation_node" name="sc_floam_odom_estimation_node" output="screen"/>
+        
+        <node pkg="optimized_sc_f_loam" type="sc_floam_laser_processing_node" name="sc_floam_laser_processing_node" output="screen"/>
+        
+        <!-- node sc_floam_laser_mapping_node is not needed because publishing map from only floam but map is published with faster frequency (final map have rate of 0.1 Hz) -->
+        <node pkg="optimized_sc_f_loam" type="sc_floam_laser_mapping_node" name="sc_floam_laser_mapping_node" output="screen"/>
+        
+        <node pkg="optimized_sc_f_loam" type="sc_floam_laserLO" name="sc_floam_laserLO" output="screen"/>
+        <!-- <node launch-prefix="gdb -ex run -&#45;args" pkg="optimized_sc_f_loam" type="sc_floam_laserLO" name="sc_floam_laserLO" output="screen"/> -->
+        <!-- <node pkg="tf" type="static_transform_publisher" name="word2map_tf"  args="x y z YAW PITCH ROLL /map /scfloam_map 10" /> -->
+
+        <!-- node f -->
+        <node pkg="tf" type="static_transform_publisher" name="word2map_tf"  args="-2.92312053118 -6.794883975221 0.47348958859 -0.2086364214 -0.000008918673 0.011199996449 /map /scfloam_map 10" />
+    <!-- </group> -->
+    
+    <!--    
+    hall pass 1
+    -2.92312053118 -6.794883975221 0.47348958859 -0.2086364214 -0.000008918673 0.011199996449
+    map - base_link
+        - Translation: [-2.921261370044, -6.794883975221, 0.192500000000]
+                    in RPY (radian) [-0.000000000000, -0.000000000000, 1.361363628543]
+
+    base_link - velodyne
+        - Translation: [-0.001859161131, 0.000000000000, 0.280989588589]
+                    in RPY (radian) [0.011199996449, -0.000008918673, -1.570000049945]
+    map - velodyne
+        - Translation: [-2.92312053118, -6.794883975221, 0.47348958859]
+                    in RPY (radian) [0.011199996449, -0.000008918673, -0.2086364214]
+
+
+    
+    hall pass 2
+    2.24809256171 24.873108770696 0.473489588589 -2.78801726856 -0.000008918673 0.011199996449
+    At time 1677509702.540008544922
+    - Translation: [2.249951722836, 24.873108770696, 0.192500000000]
+    - Rotation: in Quaternion [0.000000000000, 0.000000000000, -0.572054587293, 0.820215550424]
+                in RPY (radian) [0.000000000000, 0.000000000000, -1.218017218610]
+
+
+    lab pass
+    14.52082577022 -3.892805677562 0.47348958859 0.18506104153 -0.000008918673 0.011199996449
+    At time 1677509889.137520313263
+    - Translation: [14.522684931354, -3.892805677562, 0.192500000000]
+    - Rotation: in Quaternion [0.000000000000, 0.000000000000, 0.769163114830, 0.639052503934]
+                in RPY (radian) [0.000000000000, -0.000000000000, 1.755061091480]
+    -->
+    
+    <arg name="rviz" default="false" />
+    <group if="$(arg rviz)">
+        <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find optimized_sc_f_loam)/rviz/optimized_sc_floam_mapping.rviz" />
+    </group>
+
+    
+  	<node pkg="hector_trajectory_server" type="hector_trajectory_server" name="trajectory_server_loam" ns="gt" >
+        <param name="/target_frame_name" value="map" />
+        <param name="/source_frame_name" value="loki_1_base_link" />
+        <param name="/trajectory_update_rate" value="20.0" />
+        <param name="/trajectory_publish_rate" value="20.0" />
+    </node>
+    <node pkg="hector_trajectory_server" type="hector_trajectory_server" name="trajectory_server_loam" ns="base_link" >
+        <param name="/target_frame_name" value="map" />
+        <param name="/source_frame_name" value="base_link" />
+        <param name="/trajectory_update_rate" value="10.0" />
+        <param name="/trajectory_publish_rate" value="10.0" />
+    </node>
+</launch>

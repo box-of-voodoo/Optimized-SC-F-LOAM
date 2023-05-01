@@ -97,6 +97,9 @@ public:
 
 
     //process_isam
+    void saveOptimizedVerticesKITTIformat(const gtsam::Values& _estimates, std::string _filename);
+    void saveOdometryVerticesKITTIformat(const std::string& _filename);
+    void savegtVerticesKITTIformat(const std::string& _filename);
     void updatePoses();
     void runISAM2opt();
     void doIsam2();

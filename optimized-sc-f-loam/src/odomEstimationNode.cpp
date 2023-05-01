@@ -26,7 +26,7 @@
 #include "lidar.h"
 #include "odomEstimationClass.h"
 
-#define TF_MAP "map"
+#define TF_MAP "scfloam_map"
 
 OdomEstimationClass odomEstimation;
 std::mutex mutex_lock;

@@ -26,7 +26,7 @@
 #include "laserMappingClass.h"
 #include "lidar.h"
 
-#define TF_MAP "map"
+#define TF_MAP "scfloam_map"
 
 LaserMappingClass laserMapping;
 lidar::Lidar lidar_param;
